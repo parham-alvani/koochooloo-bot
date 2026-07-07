@@ -72,7 +72,27 @@ uv run koochooloo-bot run --cookies ~/ig_cookies.txt --max-posts 50 --output rep
 | `--output DIR` | `output` | Where CSVs, `dashboard.md`, and `snapshots/` go. |
 | `--whitelist FILE` | — | Usernames (one per line) to exclude from the ghost report. Also `IG_WHITELIST_FILE`. |
 | `--stories / --no-stories` | on | Count active-story viewers as engagement. |
+| `--cache-dir DIR` | `.cache` | Where the on-disk likers/comments cache lives. |
+| `--cache-ttl-days N` | `7` | How long cached likers/comments stay valid. |
+| `--cache / --no-cache` | on | Read/write the on-disk fetch cache. |
+| `--refresh` | off | Ignore cached entries and refetch (still updates the cache). |
 | `--csv / --no-csv` | on | Write CSV/dashboard files. |
+
+### Caching & resumable runs
+
+The request-heavy work — one `media_likers` **and** one `media_comments` call per post — is
+cached on disk with [DiskCache](https://github.com/grantjenks/python-diskcache) (a process-safe
+SQLite store), keyed by media id with a TTL (default 7 days). Two benefits:
+
+- **Cheaper reruns.** Re-running only pays for posts whose cache entries expired or are new;
+  everything else is served from disk with no API calls.
+- **Resumable after a rate limit.** Each post's data is written as it is fetched, so if a run is
+  interrupted partway (e.g. Instagram's `feedback_required` throttle), the completed posts stay
+  cached and the next run resumes from where it stopped instead of starting over.
+
+Use `--refresh` to force fresh data (e.g. to pick up new likes on recent posts), `--no-cache` to
+disable it entirely, or `--cache-ttl-days` to tune freshness. The cache lives in `.cache/`
+(git-ignored) and is safe to delete anytime.
 
 With **password** auth, the first login often triggers a **challenge** (email/SMS code) or a
 **two-factor code** — the tool prompts interactively. Cookie auth skips this. Either way the
