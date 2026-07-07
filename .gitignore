@@ -5,6 +5,9 @@ session.json
 # Generated reports
 output/
 
+# On-disk fetch cache (diskcache)
+.cache/
+
 # Python / uv
 .venv/
 __pycache__/
