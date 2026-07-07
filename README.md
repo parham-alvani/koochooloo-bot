@@ -4,7 +4,8 @@ A personal Instagram follower-analysis tool. Logs into **your own** account (no 
 a saved browser session or a one-time login) and reports:
 
 1. **Ghost followers** — followers who never liked, commented on, *or* viewed a story of any post.
-2. **Not following back** — accounts you follow that don't follow you.
+2. **Ghost following** — accounts *you* follow who never react (like/comment) to your posts.
+3. **Not following back** — accounts you follow that don't follow you.
 3. **Fans** — accounts that follow you that you don't follow back.
 4. **Per-post engagement** — follower likes and comments per post.
 5. **Unfollower tracking** — new followers and unfollowers since the last run (snapshot diff).

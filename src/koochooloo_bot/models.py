@@ -87,6 +87,7 @@ class AnalysisResult:
     """Everything the analyses produce, ready to report."""
 
     ghost_followers: list[Account]
+    ghost_following: list[Account]
     not_following_back: list[Account]
     fans: list[Account]
     suspicious_followers: list[SuspiciousFollower]

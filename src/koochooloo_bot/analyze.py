@@ -58,6 +58,8 @@ def analyze(
 
     - ghost_followers: followers who never liked, commented, or viewed a story
       (excluding whitelisted usernames).
+    - ghost_following: accounts you follow who never reacted (liked/commented)
+      to your posts — the mirror of ghost_followers.
     - not_following_back / fans: the two non-mutual sets.
     - suspicious_followers: heuristic fake-account flags.
     - non_follower_likers: accounts that liked posts but don't follow you.
@@ -73,14 +75,22 @@ def analyze(
         likers |= post.liker_ids
         commenters |= post.commenter_ids
     story_viewers = frozenset(story_viewer_counts)
-    engaged = frozenset(likers) | frozenset(commenters) | story_viewers
+    # "Reacting to a post" = liking or commenting; story views are passive.
+    post_reactors = frozenset(likers) | frozenset(commenters)
+    engaged = post_reactors | story_viewers
     engagement_available = bool(engaged)
 
-    whitelisted = {
-        user_id for user_id, acc in followers.items() if acc.username.lower() in whitelist
-    }
-    ghost_ids = follower_ids - engaged - frozenset(whitelisted)
+    def _blocked(lookup: dict[str, Account]) -> frozenset[str]:
+        return frozenset(uid for uid, acc in lookup.items() if acc.username.lower() in whitelist)
+
+    ghost_ids = follower_ids - engaged - _blocked(followers)
     ghost_followers = _sorted_accounts(ghost_ids, followers) if engagement_available else []
+
+    # People you follow who never react (like/comment) to your posts.
+    ghost_following_ids = following_ids - post_reactors - _blocked(following)
+    ghost_following = (
+        _sorted_accounts(ghost_following_ids, following) if engagement_available else []
+    )
 
     not_following_back = _sorted_accounts(following_ids - follower_ids, following)
     fans = _sorted_accounts(follower_ids - following_ids, followers)
@@ -113,6 +123,7 @@ def analyze(
 
     return AnalysisResult(
         ghost_followers=ghost_followers,
+        ghost_following=ghost_following,
         not_following_back=not_following_back,
         fans=fans,
         suspicious_followers=suspicious_followers,

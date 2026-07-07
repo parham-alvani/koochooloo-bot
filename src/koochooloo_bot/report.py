@@ -29,6 +29,7 @@ def write_csv(result: AnalysisResult, output_dir: Path) -> list[Path]:
 
     account_reports: list[tuple[str, list[Account]]] = [
         ("ghost_followers", result.ghost_followers),
+        ("ghost_following", result.ghost_following),
         ("not_following_back", result.not_following_back),
         ("fans", result.fans),
         ("non_follower_likers", result.non_follower_likers),
@@ -102,6 +103,9 @@ def print_summary(result: AnalysisResult, console: Console | None = None) -> Non
     counts.add_column("Count", justify="right")
     counts.add_row(
         "Ghost followers (no likes/comments/story views)", str(len(result.ghost_followers))
+    )
+    counts.add_row(
+        "Ghost following (you follow, they don't react)", str(len(result.ghost_following))
     )
     counts.add_row("Not following you back", str(len(result.not_following_back)))
     counts.add_row("Fans (you don't follow back)", str(len(result.fans)))
@@ -202,6 +206,7 @@ def write_dashboard(
         "| Metric | Count |",
         "|--------|------:|",
         f"| Ghost followers | {len(result.ghost_followers)} |",
+        f"| Ghost following (you follow, they don't react) | {len(result.ghost_following)} |",
         f"| Not following back | {len(result.not_following_back)} |",
         f"| Fans (you don't follow back) | {len(result.fans)} |",
         f"| Suspicious followers (heuristic) | {len(result.suspicious_followers)} |",
@@ -234,6 +239,9 @@ def write_dashboard(
         parts.append("")
 
     parts.append(_account_list_md("Ghost followers", result.ghost_followers))
+    parts.append(
+        _account_list_md("Ghost following (you follow, they don't react)", result.ghost_following)
+    )
 
     path.write_text("\n".join(parts), encoding="utf-8")
     return path
