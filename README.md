@@ -23,32 +23,45 @@ Requires [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync                       # install dependencies
-cp .env.example .env          # then edit .env with your real credentials
+cp .env.example .env          # then edit .env with ONE auth method (below)
 ```
 
-`.env`:
+### Authentication
 
-```
-IG_USERNAME=your_username
-IG_PASSWORD=your_password
-```
+Two options — **cookie/session auth is preferred** (no password login, no challenge):
+
+1. **Session cookie (recommended).** Point at a Netscape `cookies.txt` exported from a
+   browser where you're logged into Instagram:
+
+   ```
+   IG_COOKIES_FILE=/path/to/ig_cookies.txt
+   ```
+
+   Or pass it per-run: `--cookies /path/to/ig_cookies.txt` (overrides the env var).
+
+2. **Username / password (fallback).** Used only when no cookies file is configured:
+
+   ```
+   IG_USERNAME=your_username
+   IG_PASSWORD=your_password
+   ```
 
 ## Usage
 
 ```bash
-# Quick smoke test on your 5 most recent posts:
+# Quick smoke test on the 5 most recent posts:
 uv run koochooloo-bot run --max-posts 5
 
 # Full run over all posts:
 uv run koochooloo-bot run
 
-# Options
-uv run koochooloo-bot run --max-posts 50 --output reports --no-csv
+# Explicit cookies file + options:
+uv run koochooloo-bot run --cookies ~/ig_cookies.txt --max-posts 50 --output reports --no-csv
 ```
 
-On the **first** login Instagram often sends a **challenge** (email/SMS code) or asks for a
-**two-factor code** — the tool prompts for it interactively. After that, `session.json` is
-reused so subsequent runs don't re-login.
+With **password** auth, the first login often triggers a **challenge** (email/SMS code) or a
+**two-factor code** — the tool prompts interactively. Cookie auth skips this. Either way the
+resolved session is saved to `session.json` and reused on later runs.
 
 ## Notes & limitations
 
