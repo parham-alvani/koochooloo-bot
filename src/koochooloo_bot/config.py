@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 
 SESSION_FILE = Path("session.json")
 DEFAULT_OUTPUT_DIR = Path("output")
+DEFAULT_CACHE_DIR = Path(".cache")
+DEFAULT_CACHE_TTL_DAYS = 7
 
 # Human-like pacing between private-API calls (seconds). Instagrapi picks a
 # random delay in this closed interval before each request.

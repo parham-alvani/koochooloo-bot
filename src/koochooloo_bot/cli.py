@@ -11,8 +11,11 @@ from instagrapi import Client
 from rich.console import Console
 
 from koochooloo_bot import analyze, fetch, report, snapshot
+from koochooloo_bot.cache import FetchCache
 from koochooloo_bot.client import get_client, get_client_by_sessionid
 from koochooloo_bot.config import (
+    DEFAULT_CACHE_DIR,
+    DEFAULT_CACHE_TTL_DAYS,
     DEFAULT_OUTPUT_DIR,
     CookiesError,
     MissingCredentialsError,
@@ -65,6 +68,22 @@ def run(
         bool,
         typer.Option("--stories/--no-stories", help="Include active-story viewers as engagement."),
     ] = True,
+    cache_dir: Annotated[
+        Path,
+        typer.Option("--cache-dir", help="Directory for the on-disk likers/comments cache."),
+    ] = DEFAULT_CACHE_DIR,
+    cache_ttl_days: Annotated[
+        int,
+        typer.Option("--cache-ttl-days", help="Days to keep cached likers/comments."),
+    ] = DEFAULT_CACHE_TTL_DAYS,
+    use_cache: Annotated[
+        bool,
+        typer.Option("--cache/--no-cache", help="Read/write the on-disk fetch cache."),
+    ] = True,
+    refresh: Annotated[
+        bool,
+        typer.Option("--refresh", help="Ignore cached entries and refetch (still updates cache)."),
+    ] = False,
     write_csv: Annotated[
         bool,
         typer.Option("--csv/--no-csv", help="Write CSV reports to the output directory."),
@@ -109,12 +128,25 @@ def run(
     registry: dict[str, Account] = {}
     scope = "all posts" if max_posts == 0 else f"up to {max_posts} posts"
     console.print(f"[cyan]Fetching {scope} with likers and comments...[/]")
-    with console.status("Fetching engagement...") as status:
+    cache = FetchCache(
+        cache_dir,
+        cache_ttl_days * 86400,
+        enabled=use_cache,
+        refresh=refresh,
+    )
+    with cache, console.status("Fetching engagement...") as status:
 
         def on_progress(done: int, total: int) -> None:
             status.update(f"Fetching engagement... post {done}/{total}")
 
-        posts = fetch.fetch_posts(client, user_id, max_posts, registry, on_progress=on_progress)
+        posts = fetch.fetch_posts(
+            client, user_id, max_posts, registry, cache, on_progress=on_progress
+        )
+    if use_cache:
+        console.print(
+            f"[dim]Cache: {cache.hits} hits, {cache.misses} fetches "
+            f"({cache_dir}, ttl {cache_ttl_days}d).[/]"
+        )
 
     story_viewer_counts: dict[str, int] = {}
     stories_checked = 0
