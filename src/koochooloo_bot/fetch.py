@@ -7,6 +7,7 @@ from collections.abc import Callable, Mapping
 from instagrapi import Client
 from instagrapi.types import UserShort
 
+from koochooloo_bot.cache import FetchCache
 from koochooloo_bot.models import Account, Post
 
 
@@ -36,11 +37,24 @@ def fetch_following(client: Client, user_id: str) -> dict[str, Account]:
     return _accounts_from_users(client.user_following(user_id))
 
 
+def _fetch_likers(client: Client, media_id: str) -> list[Account]:
+    return [_account_from_user(user) for user in client.media_likers(media_id)]
+
+
+def _fetch_commenters(client: Client, media_id: str) -> list[Account]:
+    return [
+        _account_from_user(comment.user)
+        for comment in client.media_comments(media_id, amount=0)
+        if comment.user is not None
+    ]
+
+
 def fetch_posts(
     client: Client,
     user_id: str,
     max_posts: int,
     registry: dict[str, Account],
+    cache: FetchCache,
     on_progress: Callable[[int, int], None] | None = None,
 ) -> list[Post]:
     """Fetch the user's own posts with the likers and commenters of each.
@@ -49,6 +63,9 @@ def fetch_posts(
         max_posts: cap on how many posts to inspect; ``0`` means all posts.
         registry: mutable ``{user_id: Account}`` map, extended in place with
             every liker/commenter seen (used to resolve non-follower likers).
+        cache: disk cache keyed by media id; likers/comments are read from it
+            when present and written as each post is fetched, making the run
+            resumable if it is interrupted partway through.
         on_progress: optional ``(done, total)`` callback for progress display.
 
     This is the request-heavy step (a ``media_likers`` and a ``media_comments``
@@ -60,22 +77,23 @@ def fetch_posts(
     for index, media in enumerate(medias, start=1):
         media_id = str(media.id)
 
-        liker_ids: set[str] = set()
-        for user in client.media_likers(media_id):
-            registry[str(user.pk)] = _account_from_user(user)
-            liker_ids.add(str(user.pk))
+        # Likers abort the run on failure (a throttle affects everything), but
+        # posts fetched before the failure are already cached and will be reused.
+        likers = cache.get_accounts(
+            f"likers:{media_id}", lambda mid=media_id: _fetch_likers(client, mid)
+        )
 
-        commenter_ids: set[str] = set()
+        # Comments can be disabled/restricted on a post; tolerate that without
+        # caching an empty result (so it is retried next run).
         try:
-            comments = client.media_comments(media_id, amount=0)
+            commenters = cache.get_accounts(
+                f"comments:{media_id}", lambda mid=media_id: _fetch_commenters(client, mid)
+            )
         except Exception:
-            # Comments can be disabled/restricted on a post; don't abort the run.
-            comments = []
-        for comment in comments:
-            if comment.user is None:
-                continue
-            registry[str(comment.user.pk)] = _account_from_user(comment.user)
-            commenter_ids.add(str(comment.user.pk))
+            commenters = []
+
+        for account in (*likers, *commenters):
+            registry[account.user_id] = account
 
         posts.append(
             Post(
@@ -84,8 +102,8 @@ def fetch_posts(
                 taken_at=media.taken_at,
                 like_count=int(media.like_count or 0),
                 comment_count=int(media.comment_count or 0),
-                liker_ids=frozenset(liker_ids),
-                commenter_ids=frozenset(commenter_ids),
+                liker_ids=frozenset(account.user_id for account in likers),
+                commenter_ids=frozenset(account.user_id for account in commenters),
             )
         )
         if on_progress is not None:
