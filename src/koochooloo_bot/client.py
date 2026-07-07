@@ -47,3 +47,17 @@ def get_client(creds: Credentials) -> Client:
     _login(client, creds)
     client.dump_settings(SESSION_FILE)
     return client
+
+
+def get_client_by_sessionid(sessionid: str) -> Client:
+    """Return a client authenticated with an existing browser ``sessionid``.
+
+    This reuses a live session (e.g. exported from a browser via gallery-dl),
+    so there is no password login and no login challenge. The resolved session
+    is persisted to ``session.json`` for subsequent runs.
+    """
+    client = Client()
+    client.delay_range = DELAY_RANGE
+    client.login_by_sessionid(sessionid)
+    client.dump_settings(SESSION_FILE)
+    return client
