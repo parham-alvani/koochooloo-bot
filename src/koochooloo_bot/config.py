@@ -78,3 +78,33 @@ def sessionid_from_cookies(path: Path) -> str:
                 break
             return cookie.value
     raise CookiesError(f"No Instagram 'sessionid' cookie found in {path}")
+
+
+def resolve_whitelist_path(cli_path: Path | None) -> Path | None:
+    """Return the whitelist path from the CLI flag or IG_WHITELIST_FILE, if any."""
+    if cli_path is not None:
+        return cli_path
+    load_dotenv()
+    env_path = os.getenv("IG_WHITELIST_FILE", "").strip()
+    return Path(env_path) if env_path else None
+
+
+def load_whitelist(path: Path | None) -> frozenset[str]:
+    """Load lowercased usernames to exclude from the ghost report.
+
+    One username per line; blank lines and ``#`` comments are ignored. A leading
+    ``@`` is stripped. Returns an empty set when no path is given.
+
+    Raises:
+        CookiesError: reused as a generic config error if the file is missing.
+    """
+    if path is None:
+        return frozenset()
+    if not path.exists():
+        raise CookiesError(f"Whitelist file not found: {path}")
+    names: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        entry = line.strip().lstrip("@").lower()
+        if entry and not entry.startswith("#"):
+            names.add(entry)
+    return frozenset(names)
