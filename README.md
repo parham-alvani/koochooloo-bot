@@ -3,15 +3,15 @@
 A personal Instagram follower-analysis tool. Logs into **your own** account (no API key —
 a saved browser session or a one-time login) and reports:
 
-1. **Ghost followers** — followers who never liked, commented on, *or* viewed a story of any post.
-2. **Ghost following** — accounts *you* follow who never react (like/comment) to your posts.
+1. **Ghost followers** — followers who never liked, commented on, _or_ viewed a story of any post.
+2. **Ghost following** — accounts _you_ follow who never react (like/comment) to your posts.
 3. **Not following back** — accounts you follow that don't follow you.
-3. **Fans** — accounts that follow you that you don't follow back.
-4. **Per-post engagement** — follower likes and comments per post.
-5. **Unfollower tracking** — new followers and unfollowers since the last run (snapshot diff).
-6. **Top fans** — followers ranked by total engagement (likes + comments + story views).
-7. **Suspicious followers** — cheap heuristics flagging likely-fake accounts (no extra requests).
-8. **Non-follower likers** — accounts that like your posts but don't follow you.
+4. **Fans** — accounts that follow you that you don't follow back.
+5. **Per-post engagement** — follower likes and comments per post.
+6. **Unfollower tracking** — new followers and unfollowers since the last run (snapshot diff).
+7. **Top fans** — followers ranked by total engagement (likes + comments + story views).
+8. **Suspicious followers** — cheap heuristics flagging likely-fake accounts (no extra requests).
+9. **Non-follower likers** — accounts that like your posts but don't follow you.
 
 Output: CSV files + a `dashboard.md` in `output/`, plus a terminal summary.
 
@@ -66,17 +66,17 @@ uv run koochooloo-bot run --cookies ~/ig_cookies.txt --max-posts 50 --output rep
 
 ### Options
 
-| Flag | Default | Purpose |
-|------|---------|---------|
-| `--max-posts N` | `0` (all) | Number of recent posts to inspect. |
-| `--output DIR` | `output` | Where CSVs, `dashboard.md`, and `snapshots/` go. |
-| `--whitelist FILE` | — | Usernames (one per line) to exclude from the ghost report. Also `IG_WHITELIST_FILE`. |
-| `--stories / --no-stories` | on | Count active-story viewers as engagement. |
-| `--cache-dir DIR` | `.cache` | Where the on-disk likers/comments cache lives. |
-| `--cache-ttl-days N` | `7` | How long cached likers/comments stay valid. |
-| `--cache / --no-cache` | on | Read/write the on-disk fetch cache. |
-| `--refresh` | off | Ignore cached entries and refetch (still updates the cache). |
-| `--csv / --no-csv` | on | Write CSV/dashboard files. |
+| Flag                       | Default   | Purpose                                                                              |
+| -------------------------- | --------- | ------------------------------------------------------------------------------------ |
+| `--max-posts N`            | `0` (all) | Number of recent posts to inspect.                                                   |
+| `--output DIR`             | `output`  | Where CSVs, `dashboard.md`, and `snapshots/` go.                                     |
+| `--whitelist FILE`         | —         | Usernames (one per line) to exclude from the ghost report. Also `IG_WHITELIST_FILE`. |
+| `--stories / --no-stories` | on        | Count active-story viewers as engagement.                                            |
+| `--cache-dir DIR`          | `.cache`  | Where the on-disk likers/comments cache lives.                                       |
+| `--cache-ttl-days N`       | `7`       | How long cached likers/comments stay valid.                                          |
+| `--cache / --no-cache`     | on        | Read/write the on-disk fetch cache.                                                  |
+| `--refresh`                | off       | Ignore cached entries and refetch (still updates the cache).                         |
+| `--csv / --no-csv`         | on        | Write CSV/dashboard files.                                                           |
 
 ### Caching & resumable runs
 
